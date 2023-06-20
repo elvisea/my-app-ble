@@ -11,11 +11,12 @@ export default function App() {
     scanForPeripherals,
     allDevices: devices,
     connectToDevice,
+    subscription,
     connectedDevice,
     disconnectFromDevice,
   } = useBluetooth();
 
-  console.log("Dispositivo Conectado:", connectedDevice);
+  // console.log("Dispositivo Conectado:", connectedDevice);
 
   const scanForDevices = async () => {
     const isPermissionsEnabled = await requestPermissions();
@@ -28,7 +29,10 @@ export default function App() {
     }
   };
 
-  const handleConnect = async (device: Device) => await connectToDevice(device);
+  const handleConnect = async (device: Device) => {
+    // await subscription(device)
+    await connectToDevice(device)
+  };
 
   const handleDisconnect = () => disconnectFromDevice();
 
