@@ -12,6 +12,7 @@ const CHARACTERISTIC_UUID = "0000ff01-0000-1000-8000-00805f9b34fb";
 const CHARACTERISTIC_READ_UUID = ""
 
 const HEADER = [0x4d, 0x00, 0x00, 0x2c];
+// const PAYLOAD = { BT_PASSWORD: "EF2428", GET_WIFI_LIST: "" };
 const PAYLOAD = { BT_PASSWORD: "EF2428", GET_SERIAL_KEY: "" };
 
 
@@ -249,6 +250,11 @@ function useBluetooth(): BluetoothLowEnergyApi {
           let payloadString = JSON.stringify(PAYLOAD);
 
           const payloadBuffer = Buffer.from(payloadString);
+
+          const size = payloadString.length
+
+          HEADER[3] = size
+
 
           const concatenatedBuffer = Buffer.concat([
             Buffer.from(HEADER),
