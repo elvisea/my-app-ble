@@ -71,16 +71,20 @@ function useBluetooth(): BluetoothLowEnergyApi {
 
   }
 
+  const [decodado, setDecodado] = useState("")
+  console.log('decodado:', decodado);
+
   useEffect(() => {
     // if (tudoJunto !== "") {
     // }
-    if (responses.length > 3) {
-      formatResponse(responses.join(""));
+    // formatResponse(responses.join(""));
+    if (decodado !== "") {
+      formatResponse(decodado);
     }
 
     // formatar()
     // setStringado(responses.join(""))
-  }, [responses])
+  }, [decodado])
 
 
   const requestBluetoothScanPermission = async () => {
@@ -198,6 +202,8 @@ function useBluetooth(): BluetoothLowEnergyApi {
   const connectToDevice = async (device: Device) => {
     try {
       const connectedDevice = await bleManager.connectToDevice(device.id);
+
+      await bleManager.requestMTUForDevice(device.id, 500);
       setConnectedDevice(connectedDevice);
 
       // if (connectedDevice) {
@@ -221,86 +227,7 @@ function useBluetooth(): BluetoothLowEnergyApi {
   //   // }
   // }, [responses])
 
-  const subscription = useCallback(async (device: Device) => {
 
-    try {
-      const discoveredDevice =
-        await device.discoverAllServicesAndCharacteristics();
-
-      const services = await discoveredDevice.services();
-
-      const service = services.find((service) => service.uuid === SERVICE_UUID);
-
-      if (service) {
-        const characteristics = await service.characteristics();
-
-        const characteristic = characteristics.find(
-          (item) => item.uuid === "0000ff02-0000-1000-8000-00805f9b34fb"
-        );
-
-        if (characteristic) {
-
-          if (characteristic) {
-            characteristic.monitor((error, updatedCharacteristic) => {
-              if (error) {
-                console.error("Error during monitoring:", error);
-                return;
-              }
-
-              // if (updatedCharacteristic) {
-
-              //   const response = Buffer.from(updatedCharacteristic.value!, "base64").toString("utf8");
-              //   setResponses(prevResponses => [...prevResponses, response]);
-              // }
-
-
-              if (updatedCharacteristic) {
-
-                if (updatedCharacteristic.value) {
-                  const decoded = Buffer.from(updatedCharacteristic.value, 'base64').toString('utf-8')
-
-                  if (decoded[1].charCodeAt(0) & 0x10) {
-
-                    setResponses(prevItems => [...prevItems, decoded.slice(6)])
-
-                  } else {
-                    setResponses(prevItems => [...prevItems, decoded.slice(4)])
-
-                    // taNaHora(responses)
-
-
-
-                    // const juntos = responses.join("")
-
-                    // console.log("Juntos:", juntos);
-                    // console.log("responses:", responses);
-
-                    // setTudoJunto(juntos)
-                  }
-
-                }
-
-              }
-
-            });
-
-          }
-
-
-
-
-
-        }
-
-        if (!characteristic) console.log("characteristic not found!");
-      }
-
-      if (!service) console.log("Service not found!");
-    } catch (error) {
-      console.error("Error discovering services and characteristics:", error);
-    }
-
-  }, [])
 
   const discoverServicesAndCharacteristics = async (device: Device) => {
     try {
@@ -363,6 +290,91 @@ function useBluetooth(): BluetoothLowEnergyApi {
       console.error("Error discovering services and characteristics:", error);
     }
   }
+
+  const subscription = useCallback(async (device: Device) => {
+
+    try {
+      const discoveredDevice =
+        await device.discoverAllServicesAndCharacteristics();
+
+      const services = await discoveredDevice.services();
+
+      const service = services.find((service) => service.uuid === SERVICE_UUID);
+
+      if (service) {
+        const characteristics = await service.characteristics();
+
+        const characteristic = characteristics.find(
+          (item) => item.uuid === "0000ff02-0000-1000-8000-00805f9b34fb"
+        );
+
+        if (characteristic) {
+
+          if (characteristic) {
+            characteristic.monitor((error, updatedCharacteristic) => {
+              if (error) {
+                console.error("Error during monitoring:", error);
+                return;
+              }
+
+              // if (updatedCharacteristic) {
+
+              //   const response = Buffer.from(updatedCharacteristic.value!, "base64").toString("utf8");
+              //   setResponses(prevResponses => [...prevResponses, response]);
+              // }
+
+
+              if (updatedCharacteristic) {
+
+                if (updatedCharacteristic.value) {
+                  const decoded = Buffer.from(updatedCharacteristic.value, 'base64').toString('utf-8')
+
+                  setDecodado(decoded.slice(4))
+
+
+
+                  // if (decoded[1].charCodeAt(0) & 0x10) {
+
+                  //   setResponses(prevItems => [...prevItems, decoded.slice(6)])
+
+                  // } else {
+                  //   setResponses(prevItems => [...prevItems, decoded.slice(4)])
+
+                  //   // taNaHora(responses)
+
+
+
+                  //   // const juntos = responses.join("")
+
+                  //   // console.log("Juntos:", juntos);
+                  //   // console.log("responses:", responses);
+
+                  //   // setTudoJunto(juntos)
+                  // }
+
+                }
+
+              }
+
+            });
+
+          }
+
+
+
+
+
+        }
+
+        if (!characteristic) console.log("characteristic not found!");
+      }
+
+      if (!service) console.log("Service not found!");
+    } catch (error) {
+      console.error("Error discovering services and characteristics:", error);
+    }
+
+  }, [])
 
   // const readResponse = async (device: Device) => {
   //   // console.log("Entrou readResponse()");
@@ -462,6 +474,7 @@ function useBluetooth(): BluetoothLowEnergyApi {
       setConnectedDevice(null);
       setResponses([])
       setStringado("")
+      setDecodado("")
     }
   };
 
