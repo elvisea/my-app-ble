@@ -8,8 +8,14 @@ import { BleManager, Device } from "react-native-ble-plx";
 const SERVICE_UUID = "0000ffff-0000-1000-8000-00805f9b34fb";
 const CHARACTERISTIC_UUID = "0000ff01-0000-1000-8000-00805f9b34fb";
 
+
+const CHARACTERISTIC_READ_UUID = ""
+
 const HEADER = [0x4d, 0x00, 0x00, 0x2c];
-const PAYLOAD = { BT_PASSWORD: "93A400", GET_SERIAL_KEY: "" };
+const PAYLOAD = { BT_PASSWORD: "EF2428", GET_SERIAL_KEY: "" };
+
+
+// 
 
 interface BluetoothLowEnergyApi {
   requestPermissions(): Promise<boolean>;
@@ -24,6 +30,11 @@ function useBluetooth(): BluetoothLowEnergyApi {
   const bleManager = useMemo(() => new BleManager(), []);
   const [allDevices, setAllDevices] = useState<Device[]>(() => []);
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
+
+  const [responses, setResponses] = useState<string[]>([])
+
+  console.log("Reponses State", responses);
+
 
   const requestBluetoothScanPermission = async () => {
     const result = await PermissionsAndroid.request(
@@ -123,7 +134,6 @@ function useBluetooth(): BluetoothLowEnergyApi {
 
   const scanForPeripherals = () =>
     bleManager.startDeviceScan(null, null, (error, device) => {
-      console.log("Scan...");
 
       if (error) console.error("scanForPeripherals()", error);
 
@@ -142,6 +152,10 @@ function useBluetooth(): BluetoothLowEnergyApi {
     try {
       const connectedDevice = await bleManager.connectToDevice(device.id);
       setConnectedDevice(connectedDevice);
+
+      if (connectedDevice) {
+        bleManager.stopDeviceScan()
+      }
 
       await discoverServicesAndCharacteristics(device);
     } catch (error) {
@@ -181,6 +195,105 @@ function useBluetooth(): BluetoothLowEnergyApi {
 
           const response = await characteristic.writeWithResponse(valueBase64);
           console.log("Response function writeWithResponse()", response);
+
+
+          if (response) {
+            // console.log("...")
+            await readResponse(device);
+            // characteristic.monitor((error, updatedCharacteristic) => {
+            //   if (error) {
+            //     console.error("Error during monitoring:", error);
+            //     return;
+            //   }
+
+
+            //   // Se nenhum erro ocorrer, updatedCharacteristic.value conterá os dados enviados pelo dispositivo BLE
+            //   console.log("Received data:", updatedCharacteristic?.value);
+            // });
+
+          }
+
+
+        }
+
+        if (!characteristic) console.log("characteristic not found!");
+      }
+
+      if (!service) console.log("Service not found!");
+    } catch (error) {
+      console.error("Error discovering services and characteristics:", error);
+    }
+  }
+
+  const readResponse = async (device: Device) => {
+    console.log("readResponse()");
+
+    try {
+      const discoveredDevice =
+        await device.discoverAllServicesAndCharacteristics();
+
+      const services = await discoveredDevice.services();
+
+      const service = services.find((service) => service.uuid === SERVICE_UUID);
+
+      if (service) {
+        const characteristics = await service.characteristics();
+
+        const characteristic = characteristics.find(
+          (item) => item.uuid === "0000ff02-0000-1000-8000-00805f9b34fb"
+        );
+
+        if (characteristic) {
+
+          if (characteristic) {
+            characteristic.monitor((error, updatedCharacteristic) => {
+              if (error) {
+                console.error("Error during monitoring:", error);
+                return;
+              }
+
+
+              // Se nenhum erro ocorrer, updatedCharacteristic.value conterá os dados enviados pelo dispositivo BLE
+              // console.log("Received data:", updatedCharacteristic?.value);
+
+              let respostas = []
+
+              respostas.push(updatedCharacteristic?.value)
+
+              if (updatedCharacteristic) {
+                setResponses(prevItems => [...prevItems, updatedCharacteristic.value])
+              }
+
+
+              // const resposta = updatedCharacteristic?.value
+
+              console.log("Array de respostas", respostas);
+
+            });
+
+          }
+          // let payloadString = JSON.stringify(PAYLOAD);
+
+          // const payloadBuffer = Buffer.from(payloadString);
+
+          // const concatenatedBuffer = Buffer.concat([
+          //   Buffer.from(HEADER),
+          //   payloadBuffer,
+          // ]);
+
+          // console.log("Concatenated Buffer", concatenatedBuffer);
+
+          // const valueBase64 = concatenatedBuffer.toString("base64");
+          // console.log("Value Base64:", valueBase64);
+
+          // const response = await characteristic.writeWithResponse(valueBase64);
+          // console.log("Response function writeWithResponse()", response);
+
+          // if (response) {
+
+          // }
+
+
         }
 
         if (!characteristic) console.log("characteristic not found!");
@@ -210,3 +323,5 @@ function useBluetooth(): BluetoothLowEnergyApi {
 }
 
 export { useBluetooth };
+
+
